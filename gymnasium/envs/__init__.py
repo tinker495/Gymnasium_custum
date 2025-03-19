@@ -429,6 +429,13 @@ register(
 )
 
 register(
+    id="Humanoid-v5-unbalanced",
+    entry_point="gymnasium.envs.mujoco.humanoid_v5:HumanoidEnv",
+    kwargs={"unbalanced": True},
+    max_episode_steps=1000,
+)
+
+register(
     id="HumanoidStandup-v2",
     entry_point="gymnasium.envs.mujoco.humanoidstandup:HumanoidStandupEnv",
     max_episode_steps=1000,

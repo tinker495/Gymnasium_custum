@@ -309,6 +309,7 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
     def __init__(
         self,
         xml_file: str = "humanoid.xml",
+        unbalanced: bool = False,
         frame_skip: int = 5,
         default_camera_config: Dict[str, Union[float, int]] = DEFAULT_CAMERA_CONFIG,
         forward_reward_weight: float = 1.25,
@@ -329,6 +330,7 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
         utils.EzPickle.__init__(
             self,
             xml_file,
+            unbalanced,
             frame_skip,
             default_camera_config,
             forward_reward_weight,
@@ -367,6 +369,10 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
             include_qfrc_actuator_in_observation
         )
         self._include_cfrc_ext_in_observation = include_cfrc_ext_in_observation
+
+        if unbalanced:
+            print("Using unbalanced humanoid model")
+            xml_file = "humanoid_unbalanced.xml"
 
         MujocoEnv.__init__(
             self,
