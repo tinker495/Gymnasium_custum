@@ -571,7 +571,7 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
         self.set_state(qpos, qvel)
         
         # Set a random target velocity between -1 and 10
-        self._target_velocity = self.np_random.uniform(low=-1.0, high=10.0)
+        self._target_velocity = self.np_random.uniform(low=-3.0, high=50.0)
 
         observation = self._get_obs()
         return observation
