@@ -376,6 +376,8 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
         self._include_cfrc_ext_in_observation = include_cfrc_ext_in_observation
         self._x_velocity = 0.0
         self._y_velocity = 0.0
+        self._x_velocity_moving_average = 0.0
+        self._y_velocity_moving_average = 0.0
 
         if unbalanced:
             print("Using unbalanced humanoid model")
@@ -406,7 +408,7 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
         obs_size += self.data.cvel[1:].size * include_cvel_in_observation
         obs_size += (self.data.qvel.size - 6) * include_qfrc_actuator_in_observation
         obs_size += self.data.cfrc_ext[1:].size * include_cfrc_ext_in_observation
-        obs_size += 3  # Add one for target velocity
+        obs_size += 5  # Add one for target velocity
 
         self.observation_space = Box(
             low=-np.inf, high=np.inf, shape=(obs_size,), dtype=np.float64
@@ -424,8 +426,8 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
             "cfrc_ext": self.data.cfrc_ext[1:].size * include_cfrc_ext_in_observation,
             "ten_length": 0,
             "ten_velocity": 0,
-            "x_velocity": 1,
-            "y_velocity": 1,
+            "x_velocity": 2,
+            "y_velocity": 2,
             "target_velocity": 1,  # Add this entry for target velocity
         }
 
@@ -485,7 +487,9 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
                 com_velocity,
                 actuator_forces,
                 external_contact_forces,
-                np.array([self._x_velocity, self._y_velocity, self._target_velocity]),  # Add target velocity to observation
+                np.array([self._x_velocity, self._x_velocity_moving_average]),
+                np.array([self._y_velocity, self._y_velocity_moving_average]),
+                np.array([self._target_velocity]),  # Add target velocity to observation
             )
         )
 
@@ -496,11 +500,14 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
 
         xy_velocity = (xy_position_after - xy_position_before) / self.dt
         x_velocity, y_velocity = xy_velocity
+        # Apply exponential moving average with 0.95 factor
         self._x_velocity = x_velocity
         self._y_velocity = y_velocity
+        self._x_velocity_moving_average = 0.95 * self._x_velocity_moving_average + 0.05 * x_velocity
+        self._y_velocity_moving_average = 0.95 * self._y_velocity_moving_average + 0.05 * y_velocity
 
         observation = self._get_obs()
-        reward, reward_info = self._get_rew(x_velocity, y_velocity, action)
+        reward, reward_info = self._get_rew(self._x_velocity_moving_average, self._y_velocity_moving_average, action)
         terminated = (not self.is_healthy) and self._terminate_when_unhealthy
         info = {
             "x_position": self.data.qpos[0],
@@ -550,6 +557,10 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
     def reset_model(self):
         noise_low = -self._reset_noise_scale
         noise_high = self._reset_noise_scale
+        self._x_velocity = 0.0
+        self._y_velocity = 0.0
+        self._x_velocity_moving_average = 0.0
+        self._y_velocity_moving_average = 0.0
 
         qpos = self.init_qpos + self.np_random.uniform(
             low=noise_low, high=noise_high, size=self.model.nq
