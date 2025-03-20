@@ -374,6 +374,7 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
             include_qfrc_actuator_in_observation
         )
         self._include_cfrc_ext_in_observation = include_cfrc_ext_in_observation
+        self._x_velocity = 0.0
 
         if unbalanced:
             print("Using unbalanced humanoid model")
@@ -404,7 +405,7 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
         obs_size += self.data.cvel[1:].size * include_cvel_in_observation
         obs_size += (self.data.qvel.size - 6) * include_qfrc_actuator_in_observation
         obs_size += self.data.cfrc_ext[1:].size * include_cfrc_ext_in_observation
-        obs_size += 1  # Add one for target velocity
+        obs_size += 2  # Add one for target velocity
 
         self.observation_space = Box(
             low=-np.inf, high=np.inf, shape=(obs_size,), dtype=np.float64
@@ -422,6 +423,7 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
             "cfrc_ext": self.data.cfrc_ext[1:].size * include_cfrc_ext_in_observation,
             "ten_length": 0,
             "ten_velocity": 0,
+            "x_velocity": 1,
             "target_velocity": 1,  # Add this entry for target velocity
         }
 
@@ -481,7 +483,7 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
                 com_velocity,
                 actuator_forces,
                 external_contact_forces,
-                np.array([self._target_velocity]),  # Add target velocity to observation
+                np.array([self._x_velocity, self._target_velocity]),  # Add target velocity to observation
             )
         )
 
@@ -492,6 +494,7 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
 
         xy_velocity = (xy_position_after - xy_position_before) / self.dt
         x_velocity, y_velocity = xy_velocity
+        self._x_velocity = x_velocity
 
         observation = self._get_obs()
         reward, reward_info = self._get_rew(x_velocity, action)
