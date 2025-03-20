@@ -404,6 +404,7 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
         obs_size += self.data.cvel[1:].size * include_cvel_in_observation
         obs_size += (self.data.qvel.size - 6) * include_qfrc_actuator_in_observation
         obs_size += self.data.cfrc_ext[1:].size * include_cfrc_ext_in_observation
+        obs_size += 1  # Add one for target velocity
 
         self.observation_space = Box(
             low=-np.inf, high=np.inf, shape=(obs_size,), dtype=np.float64
@@ -421,6 +422,7 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
             "cfrc_ext": self.data.cfrc_ext[1:].size * include_cfrc_ext_in_observation,
             "ten_length": 0,
             "ten_velocity": 0,
+            "target_velocity": 1,  # Add this entry for target velocity
         }
 
     @property
@@ -479,6 +481,7 @@ class HumanoidEnv(MujocoEnv, utils.EzPickle):
                 com_velocity,
                 actuator_forces,
                 external_contact_forces,
+                np.array([self._target_velocity]),  # Add target velocity to observation
             )
         )
 
